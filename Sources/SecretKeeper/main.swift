@@ -31,27 +31,29 @@ private class Main {
                 }
         }
 
-        Options.shared.secretsToObfuscate.forEach { name, secret in
-            var secret = secret
-            let salt: [UInt8] = (0..<64).map { _ in UInt8.random(in: UInt8.min...UInt8.max) }
-            let saltString = makeHexString(from: salt)
-            let encoded: [UInt8] = secret.withUTF8 { bytes in
-                bytes.enumerated().map { offset, byte in
-                    byte ^ salt[offset % salt.count]
+        Options.shared.secretsToObfuscate
+            .sorted { $0.key < $1.key }
+            .forEach { name, secret in
+                var secret = secret
+                let salt: [UInt8] = (0..<64).map { _ in UInt8.random(in: UInt8.min...UInt8.max) }
+                let saltString = makeHexString(from: salt)
+                let encoded: [UInt8] = secret.withUTF8 { bytes in
+                    bytes.enumerated().map { offset, byte in
+                        byte ^ salt[offset % salt.count]
+                    }
                 }
+                let encodedString = makeHexString(from: encoded)
+                outputSourceCode += """
+                    private static let \(name)Salt: [UInt8] = [\(saltString)]
+
+                    static var \(name): String {
+                        let encoded: [UInt8] = [\(encodedString)]
+                        return decode(encoded, cipher: \(name)Salt)
+                    }
+
+                """
+                outputSourceCode += "\n"
             }
-            let encodedString = makeHexString(from: encoded)
-            outputSourceCode += """
-                private static let \(name)Salt: [UInt8] = [\(saltString)]
-
-                static var \(name): String {
-                    let encoded: [UInt8] = [\(encodedString)]
-                    return decode(encoded, cipher: \(name)Salt)
-                }
-
-            """
-            outputSourceCode += "\n"
-        }
 
         outputSourceCode += """
             private static func decode(_ encoded: [UInt8], cipher: [UInt8]) -> String {
