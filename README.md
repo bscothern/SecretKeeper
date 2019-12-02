@@ -7,3 +7,6 @@ You should not check in your `secrets.yml` or `Secrets.swift` file into any git 
 
 ## Acknowledgements
 This comes from the NSHipster article on [secrets](https://nshipster.com/secrets/).
+
+## TODO
+Support import of secrets via `Env` instead of just `secrets.yml`
